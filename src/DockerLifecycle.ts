@@ -81,6 +81,8 @@ export interface StartContainerOptions {
   readonly network?: string | readonly string[];
   /** Supplementary groups to add the container user to. Passed as `--group-add` flags. */
   readonly groups?: readonly (string | number)[];
+  /** Limit CPU resources via `--cpus` (e.g. `1.5`). Fractional values allowed. */
+  readonly cpus?: number;
   /**
    * SELinux volume label suffix applied to bind mounts (default `"z"`).
    *
@@ -142,6 +144,8 @@ export const startContainer = (
       "--group-add",
       String(g),
     ]);
+    const cpusFlags =
+      options?.cpus !== undefined ? ["--cpus", String(options.cpus)] : [];
 
     yield* dockerExec([
       "run",
@@ -154,6 +158,7 @@ export const startContainer = (
       ...userFlags,
       ...networkFlags,
       ...groupAddFlags,
+      ...cpusFlags,
       imageName,
     ]);
   });

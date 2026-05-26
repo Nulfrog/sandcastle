@@ -96,6 +96,17 @@ export interface PodmanOptions {
    * When omitted, no `--group-add` flags are added.
    */
   readonly groups?: readonly (string | number)[];
+  /**
+   * Limit the CPU resources available to the container, via `--cpus`.
+   *
+   * Maps directly to `podman run --cpus`. Accepts fractional values:
+   *
+   * - `2` → `--cpus 2` (at most 2 CPUs)
+   * - `1.5` → `--cpus 1.5` (at most 1.5 CPUs)
+   *
+   * When omitted, no `--cpus` flag is added and the container is unconstrained.
+   */
+  readonly cpus?: number;
 }
 
 /**
@@ -175,6 +186,8 @@ export const podman = (options?: PodmanOptions): SandboxProvider => {
         "--group-add",
         String(g),
       ]);
+      const cpusArgs =
+        options?.cpus !== undefined ? ["--cpus", String(options.cpus)] : [];
 
       // Start container via podman run
       await new Promise<void>((resolve, reject) => {
@@ -189,6 +202,7 @@ export const podman = (options?: PodmanOptions): SandboxProvider => {
             ...usernsArgs,
             ...networkArgs,
             ...groupArgs,
+            ...cpusArgs,
             "-w",
             worktreePath,
             ...envArgs,

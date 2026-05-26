@@ -157,6 +157,8 @@ const result = await run({
     // Optional: add the container user to supplementary groups via --group-add.
     // Accepts group names or numeric GIDs (e.g. for a bind-mounted Docker socket).
     groups: ["docker", 999],
+    // Optional: limit CPU resources via --cpus. Fractional values allowed (e.g. 1.5).
+    // cpus: 2,
   }),
 
   // Host repo directory — replaces process.cwd() as the anchor for
