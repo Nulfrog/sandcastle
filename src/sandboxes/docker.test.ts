@@ -138,6 +138,63 @@ describe("docker()", () => {
     expect(provider.tag).toBe("bind-mount");
   });
 
+  it("passes --group-add flags to docker run, stringifying numeric GIDs", async () => {
+    mockExecFile.mockImplementation((_command, _args, ...rest: any[]) => {
+      const callback = rest[rest.length - 1];
+      callback(null, "", "");
+      return undefined as any;
+    });
+
+    const provider = docker({ groups: ["docker", 999] });
+    const handle = await provider.create({
+      worktreePath: "/tmp/worktree",
+      hostRepoPath: "/tmp/repo",
+      mounts: [
+        { hostPath: "/tmp/worktree", sandboxPath: "/home/agent/workspace" },
+      ],
+      env: {},
+    });
+
+    const runArgs = mockExecFile.mock.calls.find(
+      ([, args]) => Array.isArray(args) && args[0] === "run",
+    )?.[1] as string[];
+
+    const firstIdx = runArgs.indexOf("--group-add");
+    expect(firstIdx).toBeGreaterThan(-1);
+    expect(runArgs[firstIdx + 1]).toBe("docker");
+    const secondIdx = runArgs.indexOf("--group-add", firstIdx + 1);
+    expect(secondIdx).toBeGreaterThan(-1);
+    expect(runArgs[secondIdx + 1]).toBe("999");
+
+    await handle.close();
+  });
+
+  it("does not pass --group-add to docker run when groups is omitted", async () => {
+    mockExecFile.mockImplementation((_command, _args, ...rest: any[]) => {
+      const callback = rest[rest.length - 1];
+      callback(null, "", "");
+      return undefined as any;
+    });
+
+    const provider = docker();
+    const handle = await provider.create({
+      worktreePath: "/tmp/worktree",
+      hostRepoPath: "/tmp/repo",
+      mounts: [
+        { hostPath: "/tmp/worktree", sandboxPath: "/home/agent/workspace" },
+      ],
+      env: {},
+    });
+
+    const runArgs = mockExecFile.mock.calls.find(
+      ([, args]) => Array.isArray(args) && args[0] === "run",
+    )?.[1] as string[];
+
+    expect(runArgs).not.toContain("--group-add");
+
+    await handle.close();
+  });
+
   it("runs pre-flight docker image inspect before docker run", async () => {
     const callOrder: string[] = [];
     mockExecFile.mockImplementation((_command, args, ...rest: any[]) => {

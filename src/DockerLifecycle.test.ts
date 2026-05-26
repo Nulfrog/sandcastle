@@ -119,6 +119,63 @@ describe("startContainer", () => {
     expect(runArgs).not.toContain("--network");
   });
 
+  it("passes --group-add flag when groups has one entry", async () => {
+    mockExecFile.mockImplementation((_cmd, _args, _opts, cb: any) => {
+      cb(null, "", "");
+      return undefined as any;
+    });
+
+    await Effect.runPromise(
+      startContainer("ctr", "img", {}, { groups: ["docker"] }),
+    );
+
+    const runCall = mockExecFile.mock.calls.find(
+      ([, args]) => Array.isArray(args) && args[0] === "run",
+    );
+    expect(runCall).toBeDefined();
+    const runArgs = runCall![1] as string[];
+    const idx = runArgs.indexOf("--group-add");
+    expect(idx).toBeGreaterThan(-1);
+    expect(runArgs[idx + 1]).toBe("docker");
+  });
+
+  it("passes multiple --group-add flags in order, stringifying numeric GIDs", async () => {
+    mockExecFile.mockImplementation((_cmd, _args, _opts, cb: any) => {
+      cb(null, "", "");
+      return undefined as any;
+    });
+
+    await Effect.runPromise(
+      startContainer("ctr", "img", {}, { groups: ["docker", 999] }),
+    );
+
+    const runCall = mockExecFile.mock.calls.find(
+      ([, args]) => Array.isArray(args) && args[0] === "run",
+    );
+    const runArgs = runCall![1] as string[];
+    const firstIdx = runArgs.indexOf("--group-add");
+    expect(firstIdx).toBeGreaterThan(-1);
+    expect(runArgs[firstIdx + 1]).toBe("docker");
+    const secondIdx = runArgs.indexOf("--group-add", firstIdx + 1);
+    expect(secondIdx).toBeGreaterThan(-1);
+    expect(runArgs[secondIdx + 1]).toBe("999");
+  });
+
+  it("does not pass --group-add when groups is omitted", async () => {
+    mockExecFile.mockImplementation((_cmd, _args, _opts, cb: any) => {
+      cb(null, "", "");
+      return undefined as any;
+    });
+
+    await Effect.runPromise(startContainer("ctr", "img", {}));
+
+    const runCall = mockExecFile.mock.calls.find(
+      ([, args]) => Array.isArray(args) && args[0] === "run",
+    );
+    const runArgs = runCall![1] as string[];
+    expect(runArgs).not.toContain("--group-add");
+  });
+
   it("uses -v format with formatVolumeMount for volume mounts", async () => {
     mockExecFile.mockImplementation((_cmd, _args, _opts, cb: any) => {
       cb(null, "", "");
@@ -126,11 +183,16 @@ describe("startContainer", () => {
     });
 
     await Effect.runPromise(
-      startContainer("ctr", "img", {}, {
-        volumeMounts: [
-          { hostPath: "/host/path", sandboxPath: "/sandbox/path" },
-        ],
-      }),
+      startContainer(
+        "ctr",
+        "img",
+        {},
+        {
+          volumeMounts: [
+            { hostPath: "/host/path", sandboxPath: "/sandbox/path" },
+          ],
+        },
+      ),
     );
 
     const runCall = mockExecFile.mock.calls.find(
@@ -149,11 +211,20 @@ describe("startContainer", () => {
     });
 
     await Effect.runPromise(
-      startContainer("ctr", "img", {}, {
-        volumeMounts: [
-          { hostPath: "/host/path", sandboxPath: "/sandbox/path", readonly: true },
-        ],
-      }),
+      startContainer(
+        "ctr",
+        "img",
+        {},
+        {
+          volumeMounts: [
+            {
+              hostPath: "/host/path",
+              sandboxPath: "/sandbox/path",
+              readonly: true,
+            },
+          ],
+        },
+      ),
     );
 
     const runCall = mockExecFile.mock.calls.find(
@@ -171,11 +242,16 @@ describe("startContainer", () => {
     });
 
     await Effect.runPromise(
-      startContainer("ctr", "img", {}, {
-        volumeMounts: [
-          { hostPath: "/host/path", sandboxPath: "/sandbox/path" },
-        ],
-      }),
+      startContainer(
+        "ctr",
+        "img",
+        {},
+        {
+          volumeMounts: [
+            { hostPath: "/host/path", sandboxPath: "/sandbox/path" },
+          ],
+        },
+      ),
     );
 
     const runCall = mockExecFile.mock.calls.find(
@@ -193,12 +269,17 @@ describe("startContainer", () => {
     });
 
     await Effect.runPromise(
-      startContainer("ctr", "img", {}, {
-        volumeMounts: [
-          { hostPath: "/host/path", sandboxPath: "/sandbox/path" },
-        ],
-        selinuxLabel: "Z",
-      }),
+      startContainer(
+        "ctr",
+        "img",
+        {},
+        {
+          volumeMounts: [
+            { hostPath: "/host/path", sandboxPath: "/sandbox/path" },
+          ],
+          selinuxLabel: "Z",
+        },
+      ),
     );
 
     const runCall = mockExecFile.mock.calls.find(
@@ -216,12 +297,17 @@ describe("startContainer", () => {
     });
 
     await Effect.runPromise(
-      startContainer("ctr", "img", {}, {
-        volumeMounts: [
-          { hostPath: "/host/path", sandboxPath: "/sandbox/path" },
-        ],
-        selinuxLabel: false,
-      }),
+      startContainer(
+        "ctr",
+        "img",
+        {},
+        {
+          volumeMounts: [
+            { hostPath: "/host/path", sandboxPath: "/sandbox/path" },
+          ],
+          selinuxLabel: false,
+        },
+      ),
     );
 
     const runCall = mockExecFile.mock.calls.find(
@@ -239,12 +325,21 @@ describe("startContainer", () => {
     });
 
     await Effect.runPromise(
-      startContainer("ctr", "img", {}, {
-        volumeMounts: [
-          { hostPath: "/host/path", sandboxPath: "/sandbox/path", readonly: true },
-        ],
-        selinuxLabel: false,
-      }),
+      startContainer(
+        "ctr",
+        "img",
+        {},
+        {
+          volumeMounts: [
+            {
+              hostPath: "/host/path",
+              sandboxPath: "/sandbox/path",
+              readonly: true,
+            },
+          ],
+          selinuxLabel: false,
+        },
+      ),
     );
 
     const runCall = mockExecFile.mock.calls.find(

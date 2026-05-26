@@ -79,6 +79,8 @@ export interface StartContainerOptions {
   readonly user?: string;
   /** Docker network(s) to attach the container to. Passed as `--network` flags. */
   readonly network?: string | readonly string[];
+  /** Supplementary groups to add the container user to. Passed as `--group-add` flags. */
+  readonly groups?: readonly (string | number)[];
   /**
    * SELinux volume label suffix applied to bind mounts (default `"z"`).
    *
@@ -136,6 +138,10 @@ export const startContainer = (
         : [options.network]
       : [];
     const networkFlags = networks.flatMap((n) => ["--network", n]);
+    const groupAddFlags = (options?.groups ?? []).flatMap((g) => [
+      "--group-add",
+      String(g),
+    ]);
 
     yield* dockerExec([
       "run",
@@ -147,6 +153,7 @@ export const startContainer = (
       ...workdirFlags,
       ...userFlags,
       ...networkFlags,
+      ...groupAddFlags,
       imageName,
     ]);
   });

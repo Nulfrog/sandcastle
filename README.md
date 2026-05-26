@@ -154,6 +154,9 @@ const result = await run({
     env: { DOCKER_SPECIFIC: "value" },
     // Optional: attach container to Docker network(s) — string or string[]
     network: "my-network",
+    // Optional: add the container user to supplementary groups via --group-add.
+    // Accepts group names or numeric GIDs (e.g. for a bind-mounted Docker socket).
+    groups: ["docker", 999],
   }),
 
   // Host repo directory — replaces process.cwd() as the anchor for

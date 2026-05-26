@@ -465,6 +465,63 @@ describe("podman()", () => {
     await handle.close();
   });
 
+  it("passes --group-add flags to podman run, stringifying numeric GIDs", async () => {
+    mockExecFile.mockImplementation((_command, _args, ...rest: any[]) => {
+      const callback = rest[rest.length - 1];
+      callback(null, "", "");
+      return undefined as any;
+    });
+
+    const provider = podman({ groups: ["docker", 999] });
+    const handle = await provider.create({
+      worktreePath: "/tmp/worktree",
+      hostRepoPath: "/tmp/repo",
+      mounts: [
+        { hostPath: "/tmp/worktree", sandboxPath: "/home/agent/workspace" },
+      ],
+      env: {},
+    });
+
+    const runArgs = mockExecFile.mock.calls.find(
+      ([, args]) => Array.isArray(args) && args[0] === "run",
+    )?.[1] as string[];
+
+    const firstIdx = runArgs.indexOf("--group-add");
+    expect(firstIdx).toBeGreaterThan(-1);
+    expect(runArgs[firstIdx + 1]).toBe("docker");
+    const secondIdx = runArgs.indexOf("--group-add", firstIdx + 1);
+    expect(secondIdx).toBeGreaterThan(-1);
+    expect(runArgs[secondIdx + 1]).toBe("999");
+
+    await handle.close();
+  });
+
+  it("does not pass --group-add flag when groups is omitted", async () => {
+    mockExecFile.mockImplementation((_command, _args, ...rest: any[]) => {
+      const callback = rest[rest.length - 1];
+      callback(null, "", "");
+      return undefined as any;
+    });
+
+    const provider = podman();
+    const handle = await provider.create({
+      worktreePath: "/tmp/worktree",
+      hostRepoPath: "/tmp/repo",
+      mounts: [
+        { hostPath: "/tmp/worktree", sandboxPath: "/home/agent/workspace" },
+      ],
+      env: {},
+    });
+
+    const runArgs = mockExecFile.mock.calls.find(
+      ([, args]) => Array.isArray(args) && args[0] === "run",
+    )?.[1] as string[];
+
+    expect(runArgs).not.toContain("--group-add");
+
+    await handle.close();
+  });
+
   it("does not pass --network flag when network is omitted", async () => {
     mockExecFile.mockImplementation((_command, _args, ...rest: any[]) => {
       const callback = rest[rest.length - 1];

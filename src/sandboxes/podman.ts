@@ -83,6 +83,19 @@ export interface PodmanOptions {
    * When omitted, Podman's default network is used.
    */
   readonly network?: string | readonly string[];
+  /**
+   * Supplementary groups to add the container user to, via `--group-add`.
+   *
+   * Accepts group names or numeric GIDs:
+   *
+   * - `["docker"]` → `--group-add docker`
+   * - `[999]` → `--group-add 999`
+   * - `["docker", 999]` → `--group-add docker --group-add 999`
+   *
+   * Useful for granting access to a bind-mounted Docker socket (Docker-outside-of-Docker).
+   * When omitted, no `--group-add` flags are added.
+   */
+  readonly groups?: readonly (string | number)[];
 }
 
 /**
@@ -158,6 +171,10 @@ export const podman = (options?: PodmanOptions): SandboxProvider => {
           : [options.network]
         : [];
       const networkArgs = networks.flatMap((n) => ["--network", n]);
+      const groupArgs = (options?.groups ?? []).flatMap((g) => [
+        "--group-add",
+        String(g),
+      ]);
 
       // Start container via podman run
       await new Promise<void>((resolve, reject) => {
@@ -171,6 +188,7 @@ export const podman = (options?: PodmanOptions): SandboxProvider => {
             ...userArgs,
             ...usernsArgs,
             ...networkArgs,
+            ...groupArgs,
             "-w",
             worktreePath,
             ...envArgs,
