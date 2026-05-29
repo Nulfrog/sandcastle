@@ -238,6 +238,34 @@ const initCommand = Command.make(
           }),
         );
 
+      // Tri-state confirm: CLI flag wins; otherwise prompt interactively (or
+      // fail fast in non-interactive mode naming the missing flag). Cancelling
+      // the prompt is treated as abort — same shape as the select prompts above.
+      const resolveConfirmFlag = (params: {
+        choice: Option.Option<boolean>;
+        flag: string;
+        promptMessage: string;
+        cancelMessage: string;
+      }): Effect.Effect<boolean, InitError> =>
+        Effect.gen(function* () {
+          if (params.choice._tag === "Some") return params.choice.value;
+          if (!isInteractive) {
+            yield* failIfNonInteractive(params.flag);
+          }
+          const confirmed = yield* Effect.promise(() =>
+            clack.confirm({
+              message: params.promptMessage,
+              initialValue: true,
+            }),
+          );
+          if (clack.isCancel(confirmed)) {
+            yield* Effect.fail(
+              new InitError({ message: params.cancelMessage }),
+            );
+          }
+          return confirmed === true;
+        });
+
       // Resolve agent: CLI flag > interactive select
       const agents = listAgents();
       let selectedAgent: AgentEntry;
@@ -369,28 +397,13 @@ const initCommand = Command.make(
       // CLI flag > interactive confirm. The flag is only meaningful for the github-issues tracker.
       let shouldCreateLabel = false;
       if (selectedIssueTracker.name === "github-issues") {
-        let labelChoice: boolean;
-        if (createLabelChoice._tag === "Some") {
-          labelChoice = createLabelChoice.value;
-        } else {
-          if (!isInteractive) {
-            yield* failIfNonInteractive("--create-label");
-          }
-          const confirmed = yield* Effect.promise(() =>
-            clack.confirm({
-              message:
-                'Create a "Sandcastle" GitHub label? (Templates filter issues by this label)',
-              initialValue: true,
-            }),
-          );
-          if (clack.isCancel(confirmed)) {
-            yield* Effect.fail(
-              new InitError({ message: "Label selection cancelled." }),
-            );
-          }
-          labelChoice = confirmed === true;
-        }
-        shouldCreateLabel = labelChoice;
+        shouldCreateLabel = yield* resolveConfirmFlag({
+          choice: createLabelChoice,
+          flag: "--create-label",
+          promptMessage:
+            'Create a "Sandcastle" GitHub label? (Templates filter issues by this label)',
+          cancelMessage: "Label selection cancelled.",
+        });
 
         if (shouldCreateLabel) {
           yield* Effect.try({
@@ -435,28 +448,12 @@ const initCommand = Command.make(
         const alreadyInstalled = yield* hostHasDependency(cwd, "zod");
         if (!alreadyInstalled) {
           const installCmd = addDependencyCommand(packageManager, "zod");
-          let shouldInstall: boolean;
-          if (installTemplateDepsChoice._tag === "Some") {
-            shouldInstall = installTemplateDepsChoice.value;
-          } else {
-            if (!isInteractive) {
-              yield* failIfNonInteractive("--install-template-deps");
-            }
-            const confirmed = yield* Effect.promise(() =>
-              clack.confirm({
-                message: `The ${selectedTemplate} template needs a schema validator. Install zod now (\`${installCmd}\`)?`,
-                initialValue: true,
-              }),
-            );
-            if (clack.isCancel(confirmed)) {
-              yield* Effect.fail(
-                new InitError({
-                  message: "Install-template-deps selection cancelled.",
-                }),
-              );
-            }
-            shouldInstall = confirmed === true;
-          }
+          const shouldInstall = yield* resolveConfirmFlag({
+            choice: installTemplateDepsChoice,
+            flag: "--install-template-deps",
+            promptMessage: `The ${selectedTemplate} template needs a schema validator. Install zod now (\`${installCmd}\`)?`,
+            cancelMessage: "Install-template-deps selection cancelled.",
+          });
           if (shouldInstall) {
             const installed = yield* Effect.sync(() => {
               try {
@@ -488,26 +485,12 @@ const initCommand = Command.make(
           "success",
         );
       } else {
-        let shouldBuild: boolean;
-        if (buildImageChoice._tag === "Some") {
-          shouldBuild = buildImageChoice.value;
-        } else {
-          if (!isInteractive) {
-            yield* failIfNonInteractive("--build-image");
-          }
-          const confirmed = yield* Effect.promise(() =>
-            clack.confirm({
-              message: `Build the default ${providerLabel} image now?`,
-              initialValue: true,
-            }),
-          );
-          if (clack.isCancel(confirmed)) {
-            yield* Effect.fail(
-              new InitError({ message: "Build-image selection cancelled." }),
-            );
-          }
-          shouldBuild = confirmed === true;
-        }
+        const shouldBuild = yield* resolveConfirmFlag({
+          choice: buildImageChoice,
+          flag: "--build-image",
+          promptMessage: `Build the default ${providerLabel} image now?`,
+          cancelMessage: "Build-image selection cancelled.",
+        });
 
         if (shouldBuild) {
           const containerfileDir = join(cwd, CONFIG_DIR);
