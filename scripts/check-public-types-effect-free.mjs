@@ -18,12 +18,7 @@ const EFFECT_IMPORT_PATTERN =
   /(["'])(?:effect(?:\/[^"']+)?|@effect\/[^"']+)\1/;
 
 async function* walk(dir) {
-  let entries;
-  try {
-    entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return;
-  }
+  const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) {
@@ -35,7 +30,9 @@ async function* walk(dir) {
 }
 
 const offenders = [];
+let scanned = 0;
 for await (const file of walk(distDir)) {
+  scanned++;
   const contents = await readFile(file, "utf8");
   const lines = contents.split("\n");
   for (let i = 0; i < lines.length; i++) {
@@ -48,6 +45,13 @@ for await (const file of walk(distDir)) {
       });
     }
   }
+}
+
+if (scanned === 0) {
+  console.error(
+    `✗ No .d.ts files found under ${distDir}. Did the build emit declarations?`,
+  );
+  process.exit(1);
 }
 
 if (offenders.length > 0) {
