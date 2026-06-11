@@ -431,7 +431,7 @@ ANTHROPIC_API_KEY=`,
   {
     name: "codex",
     label: "Codex",
-    defaultModel: "gpt-5.4-mini",
+    defaultModel: "gpt-5.4",
     factoryImport: "codex",
     dockerfileTemplate: CODEX_DOCKERFILE,
     envExample: `# OpenAI API key
