@@ -55,6 +55,12 @@ const TEMPLATES: TemplateMetadata[] = [
       "Plans parallelizable issues, executes with per-branch review, merges",
     dependencies: ["zod"],
   },
+  {
+    name: "nulfrog-castle",
+    description:
+      "Parallel planner with review, tuned for noSandbox() + pnpm workspaces",
+    dependencies: ["zod"],
+  },
 ];
 
 export const listTemplates = (): TemplateMetadata[] => TEMPLATES;
