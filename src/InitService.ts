@@ -475,7 +475,7 @@ const AGENT_REGISTRY: AgentEntry[] = [
   {
     name: "claude-code",
     label: "Claude Code",
-    defaultModel: "claude-opus-4-7",
+    defaultModel: "claude-opus-4-8",
     factoryImport: "claudeCode",
     dockerfileTemplate: CLAUDE_CODE_DOCKERFILE,
     envExample: `# Anthropic API key
