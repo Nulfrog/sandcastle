@@ -1197,6 +1197,22 @@ describe("InitService scaffold", () => {
       ).toBe(true);
     });
 
+    it("nulfrog-castle appears in listTemplates()", () => {
+      const templates = listTemplates();
+      expect(templates.some((t) => t.name === "nulfrog-castle")).toBe(true);
+    });
+
+    it("nulfrog-castle scaffolds main.mts importing from @ai-hero/sandcastle", async () => {
+      const dir = await makeDir();
+      await runScaffold(dir, { templateName: "nulfrog-castle" });
+
+      const mainTs = await readFile(
+        join(dir, ".sandcastle", "main.mts"),
+        "utf-8",
+      );
+      expect(mainTs).toContain('"@ai-hero/sandcastle"');
+    });
+
     it("common files are still generated", async () => {
       const dir = await makeDir();
       await runScaffold(dir, { templateName: "parallel-planner-with-review" });

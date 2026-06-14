@@ -1,0 +1,4 @@
+{
+  "name": "nulfrog-castle",
+  "description": "Parallel planner with review, tuned for noSandbox() + pnpm workspaces"
+}
