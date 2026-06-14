@@ -66,6 +66,14 @@ const TEMPLATES: TemplateMetadata[] = [
 export const listTemplates = (): TemplateMetadata[] => TEMPLATES;
 
 /**
+ * Host-side packages every scaffold needs regardless of template. The runner
+ * is invoked as `npx tsx .sandcastle/main.ts`, and `npx` cannot be relied on to
+ * auto-fetch `tsx` on every platform (notably Windows, where the fetched bin
+ * fails to execute), so `tsx` must be a real local dependency.
+ */
+export const RUNNER_DEPENDENCIES: readonly string[] = ["tsx"];
+
+/**
  * Host-side npm packages the given template imports directly. Empty when the
  * template name is unknown or the template declares no extra dependencies.
  */
@@ -73,6 +81,21 @@ export const getTemplateDependencies = (
   templateName: string,
 ): readonly string[] =>
   TEMPLATES.find((t) => t.name === templateName)?.dependencies ?? [];
+
+/**
+ * All host-side packages the scaffold needs to run: the universal runner deps
+ * (`tsx`) plus any the chosen template imports directly (e.g. `zod`). Deduped,
+ * runner deps first. This is the set init offers to install so the very first
+ * `npx tsx .sandcastle/main.ts` doesn't crash with a missing-binary or
+ * ERR_MODULE_NOT_FOUND error.
+ */
+export const getHostDependencies = (templateName: string): string[] => {
+  const deps = [
+    ...RUNNER_DEPENDENCIES,
+    ...getTemplateDependencies(templateName),
+  ];
+  return [...new Set(deps)];
+};
 
 // ---------------------------------------------------------------------------
 // Package manager detection (internal — not part of public API)
@@ -135,20 +158,41 @@ export const detectPackageManager = (
     return "npm";
   });
 
-/** Build the command that adds a runtime dependency for the given package manager. */
+/** Options shaping the generated dependency-install command. */
+export interface AddDependencyOptions {
+  /** Install as a dev dependency. */
+  readonly dev?: boolean;
+  /**
+   * pnpm only: target the workspace root explicitly (`-w`). pnpm refuses to add
+   * a dependency at the root of a workspace without this flag, so init must set
+   * it when scaffolding into a pnpm workspace root.
+   */
+  readonly workspaceRoot?: boolean;
+}
+
+/**
+ * Build the command that adds a dependency for the given package manager.
+ * `pkg` may be a space-separated list to install several at once.
+ */
 export const addDependencyCommand = (
   packageManager: PackageManager,
   pkg: string,
+  options: AddDependencyOptions = {},
 ): string => {
+  const { dev = false, workspaceRoot = false } = options;
   switch (packageManager) {
-    case "pnpm":
-      return `pnpm add ${pkg}`;
+    case "pnpm": {
+      const flags = [workspaceRoot ? "-w" : null, dev ? "-D" : null].filter(
+        (f): f is string => f !== null,
+      );
+      return `pnpm add ${[...flags, pkg].join(" ")}`;
+    }
     case "yarn":
-      return `yarn add ${pkg}`;
+      return `yarn add ${dev ? "-D " : ""}${pkg}`;
     case "bun":
-      return `bun add ${pkg}`;
+      return `bun add ${dev ? "-d " : ""}${pkg}`;
     case "npm":
-      return `npm install ${pkg}`;
+      return `npm install ${dev ? "--save-dev " : ""}${pkg}`;
   }
 };
 
@@ -187,6 +231,21 @@ export const hostHasDependency = (
     } catch {
       return false;
     }
+  });
+
+/**
+ * Whether `repoDir` is the root of a pnpm workspace (has `pnpm-workspace.yaml`).
+ * pnpm refuses `pnpm add <pkg>` at a workspace root without an explicit `-w`,
+ * so init uses this to add the flag and avoid a silent install failure.
+ */
+export const isPnpmWorkspaceRoot = (
+  repoDir: string,
+): Effect.Effect<boolean, never, FileSystem.FileSystem> =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    return yield* fs
+      .exists(join(repoDir, "pnpm-workspace.yaml"))
+      .pipe(Effect.orElseSucceed(() => false));
   });
 
 // ---------------------------------------------------------------------------

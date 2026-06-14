@@ -25,7 +25,8 @@ import {
   detectPackageManager,
   addDependencyCommand,
   hostHasDependency,
-  getTemplateDependencies,
+  getHostDependencies,
+  isPnpmWorkspaceRoot,
 } from "./InitService.js";
 import { defaultImageName } from "./sandboxes/docker.js";
 import type {
@@ -436,40 +437,53 @@ const initCommand = Command.make(
         ),
       );
 
-      // Detect the host package manager so the zod offer below and the next
-      // steps below both use the right install command.
+      // Detect the host package manager so the dependency offer below and the
+      // next steps below both use the right install command.
       const packageManager = yield* detectPackageManager(cwd);
 
-      // If the chosen template imports zod on the host (the planner templates
-      // build their <plan> output schema with it) and the host doesn't already
-      // declare it, offer to install it. Without this, the very first
-      // `npx tsx .sandcastle/main.ts` crashes with ERR_MODULE_NOT_FOUND.
-      if (getTemplateDependencies(selectedTemplate).includes("zod")) {
-        const alreadyInstalled = yield* hostHasDependency(cwd, "zod");
-        if (!alreadyInstalled) {
-          const installCmd = addDependencyCommand(packageManager, "zod");
-          const shouldInstall = yield* resolveConfirmFlag({
-            choice: installTemplateDepsChoice,
-            flag: "--install-template-deps",
-            promptMessage: `The ${selectedTemplate} template needs a schema validator. Install zod now (\`${installCmd}\`)?`,
-            cancelMessage: "Install-template-deps selection cancelled.",
+      // Ensure the host has the packages the scaffold needs to run: `tsx` (the
+      // runner — `npx` can't be relied on to auto-fetch it, notably on Windows)
+      // plus anything the chosen template imports directly (e.g. `zod` for the
+      // planner templates' <plan> schema). Without these the very first
+      // `npx tsx .sandcastle/main.ts` crashes with a missing-binary or
+      // ERR_MODULE_NOT_FOUND error. Only offer the ones not already declared.
+      const missingDeps: string[] = [];
+      for (const dep of getHostDependencies(selectedTemplate)) {
+        const alreadyInstalled = yield* hostHasDependency(cwd, dep);
+        if (!alreadyInstalled) missingDeps.push(dep);
+      }
+      if (missingDeps.length > 0) {
+        const workspaceRoot =
+          packageManager === "pnpm" ? yield* isPnpmWorkspaceRoot(cwd) : false;
+        const depList = missingDeps.join(" ");
+        const installCmd = addDependencyCommand(packageManager, depList, {
+          dev: true,
+          workspaceRoot,
+        });
+        const shouldInstall = yield* resolveConfirmFlag({
+          choice: installTemplateDepsChoice,
+          flag: "--install-template-deps",
+          promptMessage: `The ${selectedTemplate} scaffold needs ${missingDeps.join(", ")} on the host. Install now (\`${installCmd}\`)?`,
+          cancelMessage: "Install-template-deps selection cancelled.",
+        });
+        if (shouldInstall) {
+          const installed = yield* Effect.sync(() => {
+            try {
+              execSync(installCmd, { cwd, stdio: "ignore" });
+              return true;
+            } catch {
+              return false;
+            }
           });
-          if (shouldInstall) {
-            const installed = yield* Effect.sync(() => {
-              try {
-                execSync(installCmd, { cwd, stdio: "ignore" });
-                return true;
-              } catch {
-                return false;
-              }
-            });
-            yield* installed
-              ? d.status(`Installed zod with ${packageManager}.`, "success")
-              : d.status(
-                  `Couldn't install zod automatically. Run \`${installCmd}\` before running the agent.`,
-                  "warn",
-                );
-          }
+          yield* installed
+            ? d.status(
+                `Installed ${missingDeps.join(", ")} with ${packageManager}.`,
+                "success",
+              )
+            : d.status(
+                `Couldn't install automatically. Run \`${installCmd}\` before running the agent.`,
+                "warn",
+              );
         }
       }
 

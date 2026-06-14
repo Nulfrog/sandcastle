@@ -18,6 +18,7 @@ import {
   type ExecResult,
 } from "../SandboxProvider.js";
 import { BoundedTail, MAX_TAIL_CHARS } from "../boundedTail.js";
+import { resolvePosixShell } from "../resolveShell.js";
 
 export interface TempSandbox {
   readonly worktreePath: string;
@@ -50,7 +51,7 @@ export const createTempSandbox = async (
     if (options?.onLine) {
       const onLine = options.onLine;
       return new Promise((resolve, reject) => {
-        const proc = spawn("sh", ["-c", command], {
+        const proc = spawn(resolvePosixShell(), ["-c", command], {
           cwd: options?.cwd ?? worktreePath,
           stdio: ["ignore", "pipe", "pipe"],
         });
@@ -84,7 +85,7 @@ export const createTempSandbox = async (
 
     return new Promise((resolve, reject) => {
       execFile(
-        "sh",
+        resolvePosixShell(),
         ["-c", command],
         {
           cwd: options?.cwd ?? worktreePath,

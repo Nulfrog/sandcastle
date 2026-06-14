@@ -11,6 +11,7 @@ import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 import { BoundedTail, MAX_TAIL_CHARS } from "./boundedTail.js";
 import { CopyError, ExecError } from "./errors.js";
+import { resolvePosixShell } from "./resolveShell.js";
 import { type ExecResult, type SandboxService } from "./SandboxFactory.js";
 
 /**
@@ -31,7 +32,7 @@ export const makeLocalSandbox = (sandboxDir: string): SandboxService => {
   return {
     exec: (command, options) => {
       return Effect.async<ExecResult, ExecError>((resume) => {
-        const proc = spawn("sh", ["-c", command], {
+        const proc = spawn(resolvePosixShell(), ["-c", command], {
           cwd: options?.cwd ?? sandboxDir,
           stdio: [
             options?.stdin !== undefined ? "pipe" : "ignore",

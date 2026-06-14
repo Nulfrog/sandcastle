@@ -20,6 +20,7 @@ import type {
   InteractiveExecOptions,
 } from "../SandboxProvider.js";
 import { BoundedTail, MAX_TAIL_CHARS } from "../boundedTail.js";
+import { resolvePosixShell } from "../resolveShell.js";
 
 export interface NoSandboxOptions {
   /** Environment variables injected by this provider. Merged at launch time. */
@@ -67,7 +68,7 @@ export const noSandbox = (options?: NoSandboxOptions): NoSandboxProvider => ({
         const cwd = opts?.cwd ?? worktreePath;
 
         return new Promise((resolve, reject) => {
-          const proc = spawn("sh", ["-c", command], {
+          const proc = spawn(resolvePosixShell(), ["-c", command], {
             cwd,
             env: processEnv,
             stdio: [

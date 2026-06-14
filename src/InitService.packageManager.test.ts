@@ -9,6 +9,9 @@ import {
   addDependencyCommand,
   hostHasDependency,
   getTemplateDependencies,
+  getHostDependencies,
+  isPnpmWorkspaceRoot,
+  RUNNER_DEPENDENCIES,
 } from "./InitService.js";
 
 const makeDir = () => mkdtemp(join(tmpdir(), "init-service-"));
@@ -66,6 +69,70 @@ describe("addDependencyCommand", () => {
     { pm: "bun" as const, expected: "bun add zod" },
   ])("$pm builds '$expected'", ({ pm, expected }) => {
     expect(addDependencyCommand(pm, "zod")).toBe(expected);
+  });
+
+  it.each([
+    { pm: "npm" as const, expected: "npm install --save-dev tsx zod" },
+    { pm: "pnpm" as const, expected: "pnpm add -D tsx zod" },
+    { pm: "yarn" as const, expected: "yarn add -D tsx zod" },
+    { pm: "bun" as const, expected: "bun add -d tsx zod" },
+  ])("$pm installs multiple dev deps with '$expected'", ({ pm, expected }) => {
+    expect(addDependencyCommand(pm, "tsx zod", { dev: true })).toBe(expected);
+  });
+
+  it("adds -w before -D for a pnpm workspace root", () => {
+    expect(
+      addDependencyCommand("pnpm", "tsx", { dev: true, workspaceRoot: true }),
+    ).toBe("pnpm add -w -D tsx");
+  });
+
+  it("ignores workspaceRoot for non-pnpm managers", () => {
+    expect(addDependencyCommand("npm", "tsx", { workspaceRoot: true })).toBe(
+      "npm install tsx",
+    );
+  });
+});
+
+describe("getHostDependencies", () => {
+  it("always includes the runner dependency (tsx)", () => {
+    for (const tpl of ["blank", "simple-loop", "parallel-planner"]) {
+      expect(getHostDependencies(tpl)).toContain("tsx");
+    }
+    expect(RUNNER_DEPENDENCIES).toContain("tsx");
+  });
+
+  it("adds the template's own deps after the runner deps, deduped", () => {
+    expect(getHostDependencies("parallel-planner")).toEqual(["tsx", "zod"]);
+    expect(getHostDependencies("parallel-planner-with-review")).toEqual([
+      "tsx",
+      "zod",
+    ]);
+  });
+
+  it("is just the runner deps for templates with no extra deps", () => {
+    expect(getHostDependencies("simple-loop")).toEqual(["tsx"]);
+    expect(getHostDependencies("blank")).toEqual(["tsx"]);
+  });
+});
+
+describe("isPnpmWorkspaceRoot", () => {
+  const check = (dir: string) =>
+    Effect.runPromise(
+      isPnpmWorkspaceRoot(dir).pipe(Effect.provide(NodeFileSystem.layer)),
+    );
+
+  it("returns false without a pnpm-workspace.yaml", async () => {
+    const dir = await makeDir();
+    expect(await check(dir)).toBe(false);
+  });
+
+  it("returns true when pnpm-workspace.yaml is present", async () => {
+    const dir = await makeDir();
+    await writeFile(
+      join(dir, "pnpm-workspace.yaml"),
+      "packages:\n  - 'pkgs/*'\n",
+    );
+    expect(await check(dir)).toBe(true);
   });
 });
 
