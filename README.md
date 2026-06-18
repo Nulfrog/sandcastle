@@ -27,16 +27,22 @@ Sandcastle is provider-agnostic — it ships with built-in providers for Docker,
 
 ## Quick start
 
-1. Install the package:
+1. Install the package from this fork. It isn't published to the npm registry under a separate name — install it straight from GitHub. The package name stays `@ai-hero/sandcastle`, so every `import` in this README is unchanged.
 
 ```bash
-npm install --save-dev @ai-hero/sandcastle
+# npm
+npm install --save-dev github:Nulfrog/sandcastle
 ```
 
-2. Run `npx @ai-hero/sandcastle init`. This scaffolds a `.sandcastle` directory with all the files needed.
+```bash
+# pnpm
+pnpm add -D github:Nulfrog/sandcastle
+```
+
+2. Run `npx sandcastle init` (or `pnpm exec sandcastle init`). This runs the locally installed CLI and scaffolds a `.sandcastle` directory with all the files needed.
 
 ```bash
-npx @ai-hero/sandcastle init
+npx sandcastle init
 ```
 
 3. Edit `.sandcastle/.env` and fill in your default values for `ANTHROPIC_API_KEY`. If you want to use your Claude subscription instead of an API key, see [#191](https://github.com/mattpocock/sandcastle/issues/191).
@@ -691,7 +697,7 @@ try {
 
 ### Templates
 
-`sandcastle init` prompts you to choose a sandbox provider (Docker or Podman), an issue tracker (GitHub Issues, Beads, or Custom), and a template, which scaffolds a ready-to-use prompt and `main.mts` suited to a specific workflow. If your project's `package.json` has `"type": "module"`, the file will be named `main.ts` instead. Choosing **Custom** scaffolds the project in a deliberately broken-until-configured state plus a `.sandcastle/SETUP_ISSUE_TRACKER.md` prompt you feed to your coding agent, which wires up your own tracker by editing the scaffolded files in place. Five templates are available:
+`sandcastle init` prompts you to choose a sandbox provider (Docker or Podman), an issue tracker (GitHub Issues, Beads, or Custom), and a template, which scaffolds a ready-to-use prompt and `main.mts` suited to a specific workflow. If your project's `package.json` has `"type": "module"`, the file will be named `main.ts` instead. Choosing **Custom** scaffolds the project in a deliberately broken-until-configured state plus a `.sandcastle/SETUP_ISSUE_TRACKER.md` prompt you feed to your coding agent, which wires up your own tracker by editing the scaffolded files in place. Six templates are available:
 
 | Template                       | Description                                                               |
 | ------------------------------ | ------------------------------------------------------------------------- |
@@ -700,8 +706,11 @@ try {
 | `sequential-reviewer`          | Implements issues one by one, with a code review step after each          |
 | `parallel-planner`             | Plans parallelizable issues, executes on separate branches, then merges   |
 | `parallel-planner-with-review` | Plans parallelizable issues, executes with per-branch review, then merges |
+| `nulfrog-castle`               | Parallel planner with review, tuned for `noSandbox()` + pnpm workspaces    |
 
 Select a template during `sandcastle init` when prompted, or re-run init in a fresh repo to try a different one.
+
+The `nulfrog-castle` template runs every phase with `noSandbox()` (agents execute directly on the host — no Docker, no bind-mounts), installs dependencies with `pnpm install`, filters the planner on a `ready-for-agent` label, and pushes merged work to the remote. See [`src/templates/nulfrog-castle/CUSTOMIZATIONS.md`](src/templates/nulfrog-castle/CUSTOMIZATIONS.md) for the full list of deviations from the upstream templates.
 
 ## CLI commands
 
