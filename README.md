@@ -27,7 +27,7 @@ Sandcastle is provider-agnostic — it ships with built-in providers for Docker,
 
 ## Quick start
 
-1. Install the package from this fork. It isn't published to the npm registry under a separate name — install it straight from GitHub. The package name stays `@ai-hero/sandcastle`, so every `import` in this README is unchanged.
+1. Install the package from this fork. It is published under the name `@nulfrog/sandcastle` but isn't on the npm registry yet — install it straight from GitHub. Every `import` below uses the `@nulfrog/sandcastle` name.
 
 ```bash
 # npm
@@ -59,8 +59,8 @@ npx tsx .sandcastle/main.ts
 
 ```typescript
 // 3. Run the agent via the JS API
-import { run, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { run, claudeCode } from "@nulfrog/sandcastle";
+import { docker } from "@nulfrog/sandcastle/sandboxes/docker";
 
 await run({
   agent: claudeCode("claude-opus-4-7"),
@@ -75,18 +75,18 @@ Sandcastle uses a `SandboxProvider` to create isolated environments. The `sandbo
 
 | Provider   | Import path                                | Type       | Accepted by                                 |
 | ---------- | ------------------------------------------ | ---------- | ------------------------------------------- |
-| Docker     | `@ai-hero/sandcastle/sandboxes/docker`     | Bind-mount | `run()`, `createSandbox()`, `interactive()` |
-| Podman     | `@ai-hero/sandcastle/sandboxes/podman`     | Bind-mount | `run()`, `createSandbox()`, `interactive()` |
-| Vercel     | `@ai-hero/sandcastle/sandboxes/vercel`     | Isolated   | `run()`, `createSandbox()`, `interactive()` |
-| No-sandbox | `@ai-hero/sandcastle/sandboxes/no-sandbox` | None       | `run()`, `createSandbox()`, `interactive()` |
+| Docker     | `@nulfrog/sandcastle/sandboxes/docker`     | Bind-mount | `run()`, `createSandbox()`, `interactive()` |
+| Podman     | `@nulfrog/sandcastle/sandboxes/podman`     | Bind-mount | `run()`, `createSandbox()`, `interactive()` |
+| Vercel     | `@nulfrog/sandcastle/sandboxes/vercel`     | Isolated   | `run()`, `createSandbox()`, `interactive()` |
+| No-sandbox | `@nulfrog/sandcastle/sandboxes/no-sandbox` | None       | `run()`, `createSandbox()`, `interactive()` |
 
 Worktree methods (`wt.run()`, `wt.interactive()`, `wt.createSandbox()`) accept the same providers as their top-level counterparts. `wt.interactive()` defaults to `noSandbox()` when no sandbox is specified.
 
 ```typescript
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
-import { podman } from "@ai-hero/sandcastle/sandboxes/podman";
-import { vercel } from "@ai-hero/sandcastle/sandboxes/vercel";
-import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
+import { docker } from "@nulfrog/sandcastle/sandboxes/docker";
+import { podman } from "@nulfrog/sandcastle/sandboxes/podman";
+import { vercel } from "@nulfrog/sandcastle/sandboxes/vercel";
+import { noSandbox } from "@nulfrog/sandcastle/sandboxes/no-sandbox";
 
 // Docker, Podman, and Vercel are interchangeable in run() and createSandbox():
 await run({
@@ -112,8 +112,8 @@ You can also [create your own provider](#custom-sandbox-providers) using `create
 Sandcastle exports a programmatic `run()` function for use in scripts, CI pipelines, or custom tooling. The examples below use `docker()`, but any `SandboxProvider` works in its place.
 
 ```typescript
-import { run, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { run, claudeCode } from "@nulfrog/sandcastle";
+import { docker } from "@nulfrog/sandcastle/sandboxes/docker";
 
 const result = await run({
   agent: claudeCode("claude-opus-4-7"),
@@ -130,8 +130,8 @@ console.log(result.branch); // target branch name
 ### All options
 
 ```typescript
-import { run, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { run, claudeCode } from "@nulfrog/sandcastle";
+import { docker } from "@nulfrog/sandcastle/sandboxes/docker";
 
 const result = await run({
   // Agent provider — required. Pass a model string to claudeCode().
@@ -267,8 +267,8 @@ Use `run()` instead when you only need a single one-shot invocation — it handl
 #### Basic single-run usage
 
 ```typescript
-import { createSandbox, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { createSandbox, claudeCode } from "@nulfrog/sandcastle";
+import { docker } from "@nulfrog/sandcastle/sandboxes/docker";
 
 await using sandbox = await createSandbox({
   branch: "agent/fix-42",
@@ -286,8 +286,8 @@ console.log(result.commits); // [{ sha: "abc123" }]
 #### Multi-run implement-then-review
 
 ```typescript
-import { createSandbox, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { createSandbox, claudeCode } from "@nulfrog/sandcastle";
+import { docker } from "@nulfrog/sandcastle/sandboxes/docker";
 
 await using sandbox = await createSandbox({
   branch: "agent/fix-42",
@@ -392,7 +392,7 @@ Only `branch` and `merge-to-head` strategies are accepted; `head` is a compile-t
 Pass `cwd` to target a repo other than `process.cwd()`. Relative paths resolve against `process.cwd()`; absolute paths pass through. A `CwdError` is thrown if the path does not exist or is not a directory.
 
 ```typescript
-import { createWorktree } from "@ai-hero/sandcastle";
+import { createWorktree } from "@nulfrog/sandcastle";
 
 await using wt = await createWorktree({
   branchStrategy: { type: "branch", branch: "agent/fix-42" },
@@ -419,7 +419,7 @@ const result = await wt.run({
 console.log(result.commits); // commits made during the run
 
 // Create a long-lived sandbox from the worktree
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { docker } from "@nulfrog/sandcastle/sandboxes/docker";
 
 await using sandbox = await wt.createSandbox({
   sandbox: docker(),
@@ -564,7 +564,7 @@ If any command exits with a non-zero code, the run fails immediately with an err
 Use `{{KEY}}` placeholders in your prompt to inject values from the `promptArgs` option. This is useful for reusing the same prompt file across multiple runs with different parameters.
 
 ```typescript
-import { run } from "@ai-hero/sandcastle";
+import { run } from "@nulfrog/sandcastle";
 
 await run({
   promptFile: "./my-prompt.md",
@@ -652,8 +652,8 @@ This is independent of `idleTimeoutSeconds`. They cover different phases: `idleT
 Use `Output.object()` to extract a typed, schema-validated JSON payload from the agent's stdout. The agent emits its answer inside an XML tag you specify, and Sandcastle parses, validates, and returns it on `result.output`. The schema can be any [Standard Schema](https://standardschema.dev) validator — the examples below use [Zod](https://zod.dev), but Valibot, ArkType, and others work identically. See [ADR 0010](docs/adr/0010-structured-output.md) for design rationale.
 
 ```ts
-import { run, Output, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { run, Output, claudeCode } from "@nulfrog/sandcastle";
+import { docker } from "@nulfrog/sandcastle/sandboxes/docker";
 import { z } from "zod";
 
 const result = await run({
@@ -678,7 +678,7 @@ console.log(result.output.score); // typed as number
 When extraction or validation fails, `run()` throws a `StructuredOutputError`. Alongside `tag`, `rawMatched`, `cause`, `commits`, `branch`, and `preservedWorktreePath`, the error carries the `sessionId` (and `sessionFilePath`, when the session was captured) of the run that produced the bad output. You can resume that session to ask the agent to re-emit corrected output, without repeating the work:
 
 ```ts
-import { run, Output, StructuredOutputError } from "@ai-hero/sandcastle";
+import { run, Output, StructuredOutputError } from "@nulfrog/sandcastle";
 
 try {
   return await run({ ...opts, output });
@@ -706,7 +706,7 @@ try {
 | `sequential-reviewer`          | Implements issues one by one, with a code review step after each          |
 | `parallel-planner`             | Plans parallelizable issues, executes on separate branches, then merges   |
 | `parallel-planner-with-review` | Plans parallelizable issues, executes with per-branch review, then merges |
-| `nulfrog-castle`               | Parallel planner with review, tuned for `noSandbox()` + pnpm workspaces    |
+| `nulfrog-castle`               | Parallel planner with review, tuned for `noSandbox()` + pnpm workspaces   |
 
 Select a template during `sandcastle init` when prompted, or re-run init in a fresh repo to try a different one.
 
@@ -1012,7 +1012,7 @@ import {
   type BindMountCreateOptions,
   type BindMountSandboxHandle,
   type ExecResult,
-} from "@ai-hero/sandcastle";
+} from "@nulfrog/sandcastle";
 import { execFile, spawn } from "node:child_process";
 import { copyFile as fsCopyFile, mkdir as fsMkdir } from "node:fs/promises";
 import { dirname } from "node:path";
@@ -1112,7 +1112,7 @@ import {
   createIsolatedSandboxProvider,
   type IsolatedSandboxHandle,
   type ExecResult,
-} from "@ai-hero/sandcastle";
+} from "@nulfrog/sandcastle";
 import { execFile, spawn } from "node:child_process";
 import { copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -1228,8 +1228,8 @@ A branch strategy controls where the agent's commits land. Configure it when con
 Branch strategy is now configured on `run()`, not on the provider:
 
 ```typescript
-import { run, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { run, claudeCode } from "@nulfrog/sandcastle";
+import { docker } from "@nulfrog/sandcastle/sandboxes/docker";
 
 // head — direct write, bind-mount only (default for bind-mount providers)
 await run({
@@ -1257,7 +1257,7 @@ await run({
 Pass your custom provider via the `sandbox` option — it works the same as the built-in `docker()` provider:
 
 ```typescript
-import { run, claudeCode } from "@ai-hero/sandcastle";
+import { run, claudeCode } from "@nulfrog/sandcastle";
 
 const result = await run({
   agent: claudeCode("claude-opus-4-7"),

@@ -1,5 +1,5 @@
-import { run, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { run, claudeCode } from "@nulfrog/sandcastle";
+import { docker } from "@nulfrog/sandcastle/sandboxes/docker";
 
 // Blank template: customize this to build your own orchestration.
 // Run this with: npx tsx .sandcastle/main.mts
