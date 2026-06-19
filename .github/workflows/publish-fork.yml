@@ -1,0 +1,52 @@
+name: Publish fork to npm
+
+# Publishes this fork to the npm registry under its personal scope
+# (default @nulfrog/sandcastle) by running scripts/publish-fork.mjs. That
+# script temporarily rewrites the package name + the nulfrog-castle template
+# import, builds cross-platform, publishes, then restores the in-repo files so
+# the fork stays upstream-mergeable.
+#
+# Requires a repo secret NPM_TOKEN: an npm *automation* token with publish
+# rights to the @nulfrog scope. Automation tokens bypass 2FA, so no OTP is
+# needed in CI.
+#
+# Trigger manually from the Actions tab and supply the version to publish.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish, e.g. 0.8.3 (must be greater than the current npm latest)."
+        required: true
+      dry_run:
+        description: "Validate the tarball without publishing to the registry."
+        type: boolean
+        default: false
+
+concurrency: publish-fork
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set publish version
+        run: npm version "${{ inputs.version }}" --no-git-tag-version
+
+      - name: Publish fork
+        run: node scripts/publish-fork.mjs
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DRY: ${{ inputs.dry_run && '1' || '' }}
