@@ -30,7 +30,7 @@ export type OutputDefinition =
  * Helpers for declaring structured output on `run()`.
  *
  * ```ts
- * import { Output, run } from "@nulfrog/sandcastle";
+ * import { Output, run } from "@ai-hero/sandcastle";
  * import { z } from "zod";
  *
  * const result = await run({

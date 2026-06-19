@@ -4,7 +4,7 @@ import {
   type OutputObjectDefinition,
   type RunOptions,
   type RunResult,
-} from "@nulfrog/sandcastle";
+} from "@ai-hero/sandcastle";
 import { buildRetryFeedback } from "./retry-feedback";
 
 export interface RunWithRetryOptions<T> extends Omit<RunOptions, "output"> {

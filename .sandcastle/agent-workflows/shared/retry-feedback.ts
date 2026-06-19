@@ -1,4 +1,4 @@
-import { StructuredOutputError } from "@nulfrog/sandcastle";
+import { StructuredOutputError } from "@ai-hero/sandcastle";
 
 export const buildRetryFeedback = (
   error: StructuredOutputError,

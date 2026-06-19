@@ -1,6 +1,6 @@
 # Sandcastle project customizations
 
-Tracks deviations from the upstream `@nulfrog/sandcastle` template so they can be
+Tracks deviations from the upstream `@ai-hero/sandcastle` template so they can be
 re-applied after an upgrade. The upgrade process overwrites `.sandcastle/` with
 the vanilla template, so every upgrade must re-check this list.
 
@@ -9,12 +9,12 @@ host — no Docker, no bind-mounts).
 
 ## How to use on upgrade
 
-1. Bump `@nulfrog/sandcastle` and pull the new template files.
+1. Bump `@ai-hero/sandcastle` and pull the new template files.
 2. For each entry below, confirm the customization survived; re-apply if the
    template reverted it.
 3. Update this file with anything new.
 
-Last reconciled against: `@nulfrog/sandcastle@^0.7.0`
+Last reconciled against: `@ai-hero/sandcastle@^0.7.0`
 
 ## Active customizations
 
