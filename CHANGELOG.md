@@ -1,5 +1,11 @@
 # @ai-hero/sandcastle
 
+## 0.8.4
+
+### Patch Changes
+
+- 64ec83d: Update README install instructions to target the `Nulfrog/sandcastle` fork (install from GitHub instead of the npm registry), add a pnpm install example, and document the `nulfrog-castle` init template.
+
 ## 0.8.0
 
 ### Minor Changes
