@@ -16,8 +16,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to publish, e.g. 0.8.3 (must be greater than the current npm latest)."
-        required: true
+        description: "Optional version override (e.g. 0.8.4). Leave blank to publish package.json's version. Must exceed the current npm latest."
+        required: false
       dry_run:
         description: "Validate the tarball without publishing to the registry."
         type: boolean
@@ -42,8 +42,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Set publish version
-        run: npm version "${{ inputs.version }}" --no-git-tag-version
+      - name: Override publish version
+        if: inputs.version != ''
+        run: npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
 
       - name: Publish fork
         run: node scripts/publish-fork.mjs
