@@ -3,7 +3,7 @@ import {
   type OutputObjectDefinition,
   type RunOptions,
   type RunResult,
-} from "@nulfrog/sandcastle";
+} from "@ai-hero/sandcastle";
 import { runWithRetry } from "./run-with-retry";
 
 export interface RunWithExtractionOptions<T> extends Omit<

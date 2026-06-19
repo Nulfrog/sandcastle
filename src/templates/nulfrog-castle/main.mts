@@ -22,8 +22,8 @@
 //   "scripts": { "sandcastle": "npx tsx .sandcastle/main.mts" }
 
 import { execFileSync } from "node:child_process";
-import * as sandcastle from "@nulfrog/sandcastle";
-import { noSandbox } from "@nulfrog/sandcastle/sandboxes/no-sandbox";
+import * as sandcastle from "@ai-hero/sandcastle";
+import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 import { z } from "zod";
 
 // The planner emits its plan as JSON inside <plan> tags; Output.object extracts
